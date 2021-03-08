@@ -1,12 +1,19 @@
 pub mod lexer;
-pub mod token_type;
+pub mod token;
 pub mod characters;
 pub mod error;
+pub mod parser;
+pub mod node;
+pub mod interpreter;
+pub mod value;
 
-use lexer::Lexer;
+use crate::lexer::Lexer;
+use crate::parser::Parser;
+use crate::interpreter::Interpreter;
+use crate::error::*;
 
 fn main() {
-    const CODE: &'static str = "1 + 1 + +434.5.6";
+    const CODE: &'static str = "1 / 1 + 434.56";
 
     run(CODE);
 }
@@ -16,7 +23,22 @@ fn run(code: &'static str) {
     let result = lexer.tokenize();
 
     match result {
-        Ok(tokens) => println!("{:?}", tokens),
-        Err(error) => println!("{:?}", error)
+        Err(error) => println!("{}", error.msg()),
+        Ok(tokens) => {
+            let mut parser = Parser::new(tokens);
+            let result = parser.parse();
+            
+            match result {
+                Err(error) => println!("{}", error.msg()),
+                Ok(node) => {
+                    let interpreter = Interpreter::new(node);
+
+                    match interpreter.execute() {
+                        Err(error) => println!("{}", error.msg()),
+                        Ok(value) => println!("{:?}", value)
+                    }
+                }
+            }
+        }
     }
 }

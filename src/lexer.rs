@@ -1,4 +1,4 @@
-use crate::token_type::TokenType;
+use crate::token::TokenType;
 use crate::characters::*;
 use crate::error::*;
 // use regex::Regex;
