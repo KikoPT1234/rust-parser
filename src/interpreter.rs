@@ -7,55 +7,68 @@ use std::collections::HashMap;
 
 pub type RuntimeResult = Result<Value, RuntimeError>;
 
-pub struct Interpreter {
-    node: Node
-}
+pub struct Interpreter {}
 
 impl Interpreter {
-    pub fn new(node: Node) -> Interpreter {
-        Interpreter {
-            node
-        }
+    pub fn new() -> Interpreter {
+        Interpreter {}
     }
 
-    pub fn execute(&self) -> RuntimeResult {
-        let context = Context::new(None);
-
-        self.visit(&self.node, &context)
-    }
-
-    fn visit(&self, node: &Node, context: &Context) -> RuntimeResult {
+    pub fn visit(&self, node: &Node, context: &mut Context) -> RuntimeResult {
         match node {
+            Node::Statements(_, _) => self.visit_statements_node(node, context),
             Node::Int(_) => self.visit_int_node(node, context),
             Node::Float(_) => self.visit_float_node(node, context),
             Node::Str(_) => self.visit_string_node(node, context),
             Node::UnaryOp(_, _) => self.visit_unary_op_node(node, context),
-            Node::BinaryOp(_, _, _) => self.visit_binary_op_node(node, context)
+            Node::BinaryOp(_, _, _) => self.visit_binary_op_node(node, context),
+            Node::VarDef(_, _) => self.visit_var_def_node(node, context),
+            Node::VarAcc(_) => self.visit_var_acc_node(node, context),
+            Node::Empty => Ok(Value::Null)
         }
     }
 
-    fn visit_int_node(&self, node: &Node, context: &Context) -> RuntimeResult {
+    fn visit_statements_node(&self, node: &Node, context: &mut Context) -> RuntimeResult {
+        match node {
+            Node::Statements(nodes, should_return_last) => {
+                let mut value = Value::Null;
+
+                for node in nodes {
+                    value = self.visit(node, context)?;
+                };
+
+                if *should_return_last {
+                    Ok(value)
+                } else {
+                    Ok(Value::Null)
+                }
+            },
+            _ => Err(RuntimeError::new(String::from("Statements expected")))
+        }
+    }
+
+    fn visit_int_node(&self, node: &Node, _context: &mut Context) -> RuntimeResult {
         match node {
             Node::Int(n) => Ok(Value::Int(*n)),
             _ => Err(RuntimeError::new(String::from("Integer expected")))
         }
     }
 
-    fn visit_float_node(&self, node: &Node, context: &Context) -> RuntimeResult {
+    fn visit_float_node(&self, node: &Node, _context: &mut Context) -> RuntimeResult {
         match node {
             Node::Float(n) => Ok(Value::Float(*n)),
             _ => Err(RuntimeError::new(String::from("Float expected")))
         }
     }
 
-    fn visit_string_node(&self, node: &Node, context: &Context) -> RuntimeResult {
+    fn visit_string_node(&self, node: &Node, _context: &mut Context) -> RuntimeResult {
         match node {
             Node::Str(string) => Ok(Value::Str(string.as_str().to_string())),
             _ => Err(RuntimeError::new(String::from("String expected")))
         }
     }
 
-    fn visit_unary_op_node(&self, node: &Node, context: &Context) -> RuntimeResult {
+    fn visit_unary_op_node(&self, node: &Node, context: &mut Context) -> RuntimeResult {
         match node {
             Node::UnaryOp(node, token) => {
                 let value = self.visit(node, context)?;
@@ -70,7 +83,7 @@ impl Interpreter {
         }
     }
 
-    fn visit_binary_op_node(&self, node: &Node, context: &Context) -> RuntimeResult {
+    fn visit_binary_op_node(&self, node: &Node, context: &mut Context) -> RuntimeResult {
         match node {
             Node::BinaryOp(left_node, token, right_node) => {
                 let left = self.visit(left_node, context)?;
@@ -87,18 +100,45 @@ impl Interpreter {
             _ => Err(RuntimeError::new(String::from("Binary operation expected")))
         }
     }
+
+    fn visit_var_def_node(&self, node: &Node, context: &mut Context) -> RuntimeResult {
+        match node {
+            Node::VarDef(name, value_node) => {
+                let value = self.visit(value_node, context)?;
+
+                context.symbol_table.set(name, value);
+
+                let value = context.symbol_table.get(name).unwrap();
+
+                Ok(value)
+            }
+            _ => Err(RuntimeError::new(String::from("Var definition expected")))
+        }
+    }
+
+    fn visit_var_acc_node(&self, node: &Node, context: &mut Context) -> RuntimeResult {
+        match node {
+            Node::VarAcc(name) => {
+                match context.symbol_table.get(name) {
+                    Some(value) => Ok(value),
+                    None => Err(RuntimeError::new(String::from(name) + " is not defined"))
+                }
+            }
+            _ => Err(RuntimeError::new(String::from("Var access expected")))
+        }
+    }
 }
 
 pub struct Context<'a> {
-    parent: Option<&'a Context<'a>>,
-    symbolTable: SymbolTable
+    pub parent: Option<&'a Context<'a>>,
+    pub symbol_table: SymbolTable
 }
 
 impl<'a> Context<'a> {
     pub fn new(parent: Option<&'a Context>) -> Context<'a> {
         Context {
             parent,
-            symbolTable: SymbolTable::new()
+            symbol_table: SymbolTable::new()
         }
     }
 }
@@ -111,6 +151,17 @@ impl SymbolTable {
     pub fn new() -> Self {
         SymbolTable {
             symbols: HashMap::new()
+        }
+    }
+
+    pub fn set(&mut self, name: &str, value: Value) {
+        self.symbols.insert(String::from(name), value);
+    }
+
+    pub fn get(&mut self, name: &str) -> Option<Value> {
+        match self.symbols.get(name) {
+            Some(value) => Some(value.clone()),
+            None => None
         }
     }
 }

@@ -18,7 +18,7 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> ParseResult {
-        let result = self.expression();
+        let result = self.statements();
 
         if self.current_token() != TokenType::EOF {
             Err(ParseError::new(String::from("Unexpected token '") + &self.current_token().to_string() + "'"))
@@ -27,8 +27,52 @@ impl Parser {
         }
     }
 
+    fn statements(&mut self) -> ParseResult {
+        let mut nodes = vec![];
+
+        loop {
+            let mut should_return = true;
+            nodes.push(Box::new(self.expression()?));
+
+            if self.current_token() == TokenType::Semicolon {
+                should_return = false;
+                self.next();
+            }
+
+            if self.current_token() == TokenType::EOF {
+                return Ok(Node::Statements(nodes, should_return));
+            }
+        }
+    }
+
     fn expression(&mut self) -> ParseResult {
-        self.term()
+        match self.current_token() {
+            TokenType::Keyword(string) => {
+                if string == "let" {
+                    self.next();
+                    
+                    match self.current_token() {
+                        TokenType::Identifier(name) => {
+                            self.next();
+
+                            if self.current_token() != TokenType::Eq {
+                                return Err(ParseError::new(String::from("Expected '='")))
+                            }
+
+                            self.next();
+
+                            let value_node = self.expression()?;
+
+                            Ok(Node::VarDef(name, Box::new(value_node)))
+                        },
+                        _ => Err(ParseError::new(String::from("Expected identifier")))
+                    }
+                } else {
+                    self.term()
+                }
+            }
+            _ => self.term()
+        }
     }
 
     fn term(&mut self) -> ParseResult {
@@ -61,6 +105,7 @@ impl Parser {
             TokenType::Int(number) => Ok(Node::Int(number)),
             TokenType::Float(number) => Ok(Node::Float(number)),
             TokenType::Str(string) => Ok(Node::Str(string)),
+            TokenType::Identifier(string) => Ok(Node::VarAcc(string)),
             _ => Err(ParseError::new(String::from("Unexpected token '") + &self.current_token().to_string() + "'"))
         };
         self.next();

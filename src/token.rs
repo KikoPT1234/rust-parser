@@ -9,9 +9,17 @@ pub enum TokenType {
     Mul,
     Div,
     Pow,
+    Eq,
+    EE,
+    NE,
+    GT,
+    GTE,
+    LT,
+    LTE,
     Keyword(String),
     Identifier(String),
     Str(String),
+    Semicolon,
     EOF
 }
 

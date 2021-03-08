@@ -40,6 +40,8 @@ impl Lexer {
                             '*' => TokenType::Mul,
                             '/' => TokenType::Div,
                             '^' => TokenType::Pow,
+                            '=' => TokenType::Eq,
+                            ';' => TokenType::Semicolon,
                             '"' => self.make_string()?,
                             ' ' => {
                                 self.next();

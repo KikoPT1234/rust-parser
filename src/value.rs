@@ -1,11 +1,13 @@
 use crate::interpreter::RuntimeResult;
 use crate::error::RuntimeError;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     Int(i32),
     Float(f32),
-    Str(String)
+    Str(String),
+    Boolean(bool),
+    Null
 }
 
 use self::Value::*;
@@ -17,6 +19,8 @@ impl Value {
             (Int(n1), Float(n2)) => Ok(Float(*n1 as f32 + n2)),
             (Float(n1), Int(n2)) => Ok(Float(n1 + n2 as f32)),
             (Float(n1), Float(n2)) => Ok(Float(n1 + n2)),
+            (Str(s1), Str(s2)) => Ok(Str(String::from(s1) + &s2)),
+            (Str(s), other) => Ok(Str(String::from(s) + &other.to_string())),
             _ => Err(RuntimeError::new(String::from("Illegal operation ADD")))
         }
     }
@@ -72,6 +76,16 @@ impl Value {
             (Float(n1), Int(n2)) => Ok(Float(n1.powi(n2))),
             (Float(n1), Float(n2)) => Ok(Float(n1.powf(n2))),
             _ => Err(RuntimeError::new(String::from("Illegal operation RAISE")))
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            Int(n) => n.to_string(),
+            Float(n) => n.to_string(),
+            Boolean(b) => b.to_string(),
+            Str(s) => String::from(s),
+            Null => String::from("null")
         }
     }
 }
