@@ -23,7 +23,7 @@ impl Value {
 
     pub fn subtract(&self, other: Value) -> RuntimeResult {
         match (self, other) {
-            (Int(n1), Int(n2)) => Ok(Int(n1 + n2)),
+            (Int(n1), Int(n2)) => Ok(Int(n1 - n2)),
             (Int(n1), Float(n2)) => Ok(Float(*n1 as f32 - n2)),
             (Float(n1), Int(n2)) => Ok(Float(n1 - n2 as f32)),
             (Float(n1), Float(n2)) => Ok(Float(n1 - n2)),
@@ -43,7 +43,14 @@ impl Value {
 
     pub fn divide(&self, other: Value) -> RuntimeResult {
         match (self, other) {
-            (Int(n1), Int(n2)) => Ok(Float(*n1 as f32 / n2 as f32)),
+            (Int(n1), Int(n2)) => {
+                let r = *n1 as f32 / n2 as f32;
+                if r == r.floor() {
+                    Ok(Int(r as i32))
+                } else {
+                    Ok(Float(r))
+                }
+            },
             (Int(n1), Float(n2)) => Ok(Float(*n1 as f32 / n2)),
             (Float(n1), Int(n2)) => Ok(Float(n1 / n2 as f32)),
             (Float(n1), Float(n2)) => Ok(Float(n1 / n2)),
