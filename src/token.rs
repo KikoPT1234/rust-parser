@@ -8,6 +8,7 @@ pub enum TokenType {
     Minus,
     Mul,
     Div,
+    Pow,
     EOF
 }
 

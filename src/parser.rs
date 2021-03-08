@@ -36,7 +36,11 @@ impl Parser {
     }
 
     fn factor(&mut self) -> ParseResult {
-        self.binary_operation(&mut |this: &mut Self| this.atom(), &[TokenType::Mul, TokenType::Div])
+        self.binary_operation(&mut |this: &mut Self| this.power(), &[TokenType::Mul, TokenType::Div])
+    }
+
+    fn power(&mut self) -> ParseResult {
+        self.binary_operation(&mut |this: &mut Self| this.atom(), &[TokenType::Pow])
     }
 
     fn atom(&mut self) -> ParseResult {

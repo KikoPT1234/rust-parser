@@ -56,6 +56,7 @@ impl Interpreter {
                     &TokenType::Minus => left.subtract(right),
                     &TokenType::Mul => left.multiply(right),
                     &TokenType::Div => left.divide(right),
+                    &TokenType::Pow => left.raise(right),
                     _ => Err(RuntimeError::new(String::from("Illegal token '") + &token.to_string() + ")"))
                 }
             },

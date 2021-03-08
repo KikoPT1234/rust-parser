@@ -13,7 +13,7 @@ use crate::interpreter::Interpreter;
 use crate::error::*;
 
 fn main() {
-    const CODE: &'static str = "1 / 1 + 434.56";
+    const CODE: &'static str = "5-3*120/10";
 
     run(CODE);
 }

@@ -50,4 +50,21 @@ impl Value {
             _ => Err(RuntimeError::new(String::from("Illegal operation DIVIDE")))
         }
     }
+
+    pub fn raise(&self, power_of: Value) -> RuntimeResult {
+        match (self, power_of) {
+            (Int(n1), Int(n2)) => {
+                if n2 >= 0 {
+                    Ok(Int(n1.pow(n2 as u32)))
+                } else {
+                    let n1 = *n1 as f32;
+                    Ok(Float(n1.powi(n2)))
+                }
+            },
+            (Int(n1), Float(n2)) => Ok(Float((*n1 as f32).powf(n2))),
+            (Float(n1), Int(n2)) => Ok(Float(n1.powi(n2))),
+            (Float(n1), Float(n2)) => Ok(Float(n1.powf(n2))),
+            _ => Err(RuntimeError::new(String::from("Illegal operation RAISE")))
+        }
+    }
 }

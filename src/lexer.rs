@@ -35,6 +35,7 @@ impl Lexer {
                             '-' => TokenType::Minus,
                             '*' => TokenType::Mul,
                             '/' => TokenType::Div,
+                            '^' => TokenType::Pow,
                             ' ' => {
                                 self.next();
                                 continue;
