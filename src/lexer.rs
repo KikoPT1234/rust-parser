@@ -1,7 +1,9 @@
 use crate::token::TokenType;
 use crate::characters::*;
 use crate::error::*;
-// use regex::Regex;
+
+pub type LexResultAll = Result<Vec<TokenType>, LexError>;
+pub type LexResult = Result<TokenType, LexError>;
 
 pub struct Lexer {
     source: String,    
@@ -20,7 +22,7 @@ impl Lexer {
         lexer
     }
 
-    pub fn tokenize(&mut self) -> Result<Vec<TokenType>, LexError> {
+    pub fn tokenize(&mut self) -> LexResultAll {
         let mut tokens = vec![];
         loop {
             let token_type;
@@ -28,7 +30,9 @@ impl Lexer {
             match self.current_char {
                 Some(current_char) => {
                     if DIGITS.contains(current_char) {
-                        token_type = self.make_number();
+                        token_type = self.make_number()?;
+                    } else if LETTERS_AND_DIGITS.contains(current_char) {
+                        token_type = self.make_identifier()?;
                     } else {
                         token_type = match current_char {
                             '+' => TokenType::Plus,
@@ -36,6 +40,7 @@ impl Lexer {
                             '*' => TokenType::Mul,
                             '/' => TokenType::Div,
                             '^' => TokenType::Pow,
+                            '"' => self.make_string()?,
                             ' ' => {
                                 self.next();
                                 continue;
@@ -78,12 +83,7 @@ impl Lexer {
         Ok(tokens)
     }
 
-    fn next(&mut self) {
-        self.char_index += 1;
-        self.current_char = self.source.chars().nth(self.char_index as usize);
-    }
-
-    fn make_number(&mut self) -> TokenType {
+    fn make_number(&mut self) -> LexResult {
         let mut number_string = String::new();
         let mut has_point = false;
         loop {
@@ -104,9 +104,77 @@ impl Lexer {
             }
         }
         if has_point {
-            TokenType::Float(number_string.parse::<f32>().unwrap())
+            Ok(TokenType::Float(number_string.parse::<f32>().unwrap()))
         } else {
-            TokenType::Int(number_string.parse::<i32>().unwrap())
+            Ok(TokenType::Int(number_string.parse::<i32>().unwrap()))
         }
+    }
+
+    fn make_string(&mut self) -> LexResult {
+        let mut string = String::new();
+        let mut special = false;
+
+        if let Some(current_char) = self.current_char {
+            let character = current_char;
+            self.next();
+            loop {
+                if let Some(current_char) = self.current_char {
+                    if current_char == character {
+                        break;
+                    } else if current_char == '\\' {
+                        special = true;
+                    } else {
+                        if special {
+                            special = false;
+                            let mut found = false;
+                            for i in &SPECIAL_CHARACTERS {
+                                if i[0] == current_char {
+                                    string.push(i[1]);
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if !found {
+                                string.push(current_char);
+                            }
+                        } else {
+                            string.push(current_char);
+                        }
+                    }
+                    self.next();
+                } else {
+                    return Err(LexError::new(String::from("Expected '\"'")))
+                }
+            }
+        };
+
+        Ok(TokenType::Str(string))
+    }
+
+    fn make_identifier(&mut self) -> LexResult {
+        let mut identifier_string = String::new();
+
+        loop {
+            if let Some(current_char) = self.current_char {
+                if !LETTERS_AND_DIGITS.contains(current_char) {
+                    break;
+                }
+                identifier_string.push(current_char);
+                self.next();
+            } else {
+                break;
+            }
+        }
+
+        if KEYWORDS.contains(&identifier_string.as_str()) {
+            Ok(TokenType::Keyword(identifier_string))
+        } else {
+            Ok(TokenType::Identifier(identifier_string))
+        }
+    }
+
+    fn next(&mut self) {
+        self.char_index += 1;
+        self.current_char = self.source.chars().nth(self.char_index as usize);
     }
 }

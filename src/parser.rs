@@ -21,7 +21,7 @@ impl Parser {
         let result = self.expression();
 
         if self.current_token() != TokenType::EOF {
-            Err(ParseError::new(String::from("Unexpected token '")))
+            Err(ParseError::new(String::from("Unexpected token '") + &self.current_token().to_string() + "'"))
         } else {
             result
         }
@@ -40,13 +40,27 @@ impl Parser {
     }
 
     fn power(&mut self) -> ParseResult {
-        self.binary_operation(&mut |this: &mut Self| this.atom(), &[TokenType::Pow])
+        self.binary_operation(&mut |this: &mut Self| this.unary(), &[TokenType::Pow])
+    }
+
+    fn unary(&mut self) -> ParseResult {
+        let current_token = self.current_token();
+        if current_token == TokenType::Plus || current_token == TokenType::Minus {
+            self.next();
+
+            let node = self.atom()?;
+
+            return Ok(Node::UnaryOp(Box::new(node), current_token));
+        }
+
+        self.atom()
     }
 
     fn atom(&mut self) -> ParseResult {
         let result: ParseResult = match self.current_token() {
             TokenType::Int(number) => Ok(Node::Int(number)),
             TokenType::Float(number) => Ok(Node::Float(number)),
+            TokenType::Str(string) => Ok(Node::Str(string)),
             _ => Err(ParseError::new(String::from("Unexpected token '") + &self.current_token().to_string() + "'"))
         };
         self.next();

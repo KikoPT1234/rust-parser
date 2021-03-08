@@ -28,6 +28,8 @@ impl Interpreter {
         match node {
             Node::Int(_) => self.visit_int_node(node, context),
             Node::Float(_) => self.visit_float_node(node, context),
+            Node::Str(_) => self.visit_string_node(node, context),
+            Node::UnaryOp(_, _) => self.visit_unary_op_node(node, context),
             Node::BinaryOp(_, _, _) => self.visit_binary_op_node(node, context)
         }
     }
@@ -43,6 +45,28 @@ impl Interpreter {
         match node {
             Node::Float(n) => Ok(Value::Float(*n)),
             _ => Err(RuntimeError::new(String::from("Float expected")))
+        }
+    }
+
+    fn visit_string_node(&self, node: &Node, context: &Context) -> RuntimeResult {
+        match node {
+            Node::Str(string) => Ok(Value::Str(string.as_str().to_string())),
+            _ => Err(RuntimeError::new(String::from("String expected")))
+        }
+    }
+
+    fn visit_unary_op_node(&self, node: &Node, context: &Context) -> RuntimeResult {
+        match node {
+            Node::UnaryOp(node, token) => {
+                let value = self.visit(node, context)?;
+                
+                match token {
+                    TokenType::Plus => Ok(value.multiply(Value::Int(1))?),
+                    TokenType::Minus => Ok(value.multiply(Value::Int(-1))?),
+                    _ => Ok(value)
+                }
+            },
+            _ => Err(RuntimeError::new(String::from("Unary operation expected")))
         }
     }
 

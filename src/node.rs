@@ -4,5 +4,7 @@ use crate::token::TokenType;
 pub enum Node {
     Int(i32),
     Float(f32),
-    BinaryOp(Box<Node>, TokenType, Box<Node>)
+    BinaryOp(Box<Node>, TokenType, Box<Node>),
+    UnaryOp(Box<Node>, TokenType),
+    Str(String)
 }

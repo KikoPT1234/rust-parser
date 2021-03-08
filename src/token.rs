@@ -9,6 +9,9 @@ pub enum TokenType {
     Mul,
     Div,
     Pow,
+    Keyword(String),
+    Identifier(String),
+    Str(String),
     EOF
 }
 
