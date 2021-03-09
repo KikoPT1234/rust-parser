@@ -68,11 +68,37 @@ impl Parser {
                         _ => Err(ParseError::new(String::from("Expected identifier")))
                     }
                 } else {
-                    self.term()
+                    self.logical_bitwise_comparison()
                 }
             }
-            _ => self.term()
+            _ => self.logical_bitwise_comparison()
         }
+    }
+
+    fn logical_bitwise_comparison(&mut self) -> ParseResult {
+        self.binary_operation(&mut |this: &mut Self| this.numeric_comparison(), &[TokenType::BitwiseAnd, TokenType::BitwiseOr, TokenType::BitwiseXOr, TokenType::And, TokenType::Or])
+    }
+
+    fn numeric_comparison(&mut self) -> ParseResult {
+        self.binary_operation(&mut |this: &mut Self| this.bitwise_shifting(), &[TokenType::EE, TokenType::NE, TokenType::GT, TokenType::GTE, TokenType::LT, TokenType::LTE])
+    }
+
+    fn bitwise_shifting(&mut self) -> ParseResult {
+        self.binary_operation(&mut |this: &mut Self| this.not(), &[TokenType::BitwiseRightShift, TokenType::BitwiseLeftShift])
+    }
+    
+    fn not(&mut self) -> ParseResult {
+        if self.current_token() == TokenType::Not || self.current_token() == TokenType::BitwiseNot {
+            let op_token = self.current_token();
+            
+            self.next();
+
+            let node = self.not()?;
+
+            return Ok(Node::UnaryOp(Box::new(node), op_token))
+        }
+
+        self.term()
     }
 
     fn term(&mut self) -> ParseResult {
@@ -106,6 +132,7 @@ impl Parser {
             TokenType::Float(number) => Ok(Node::Float(number)),
             TokenType::Str(string) => Ok(Node::Str(string)),
             TokenType::Identifier(string) => Ok(Node::VarAcc(string)),
+            TokenType::EOF => Ok(Node::Empty),
             _ => Err(ParseError::new(String::from("Unexpected token '") + &self.current_token().to_string() + "'"))
         };
         self.next();
@@ -129,7 +156,9 @@ impl Parser {
     }
 
     fn next(&mut self) -> TokenType {
-        self.token_index += 1;
+        if self.token_index + 1 < self.tokens.len() {
+            self.token_index += 1;
+        }
         self.tokens[self.token_index].clone()
     }
 

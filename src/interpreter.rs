@@ -94,7 +94,27 @@ impl Interpreter {
                     &TokenType::Mul => left.multiply(right),
                     &TokenType::Div => left.divide(right),
                     &TokenType::Pow => left.raise(right),
-                    _ => Err(RuntimeError::new(String::from("Illegal token '") + &token.to_string() + ")"))
+                    &TokenType::EE => left.equals(right),
+                    &TokenType::NE => {
+                        let not_equals = left.equals(right)?;
+                        
+                        match not_equals {
+                            Value::Boolean(b) => Ok(Value::Boolean(!b)),
+                            right => Err(RuntimeError::new(String::from("Comparing '") + &left.to_string() + "' with '" + &right.to_string() + "' gave a non-boolean value."))
+                        }
+                    },
+                    &TokenType::GT => left.is_greater_than(right),
+                    &TokenType::GTE => left.is_greater_than_or_equal_to(right),
+                    &TokenType::LT => left.is_less_than(right),
+                    &TokenType::LTE => left.is_less_than_or_equal_to(right),
+                    &TokenType::BitwiseAnd => left.bitwise_and(right),
+                    &TokenType::BitwiseOr => left.bitwise_or(right),
+                    &TokenType::BitwiseXOr => left.bitwise_xor(right),
+                    &TokenType::BitwiseLeftShift => left.left_shift(right),
+                    &TokenType::BitwiseRightShift => left.right_shift(right),
+                    &TokenType::And => left.logical_and(right),
+                    &TokenType::Or => left.logical_or(right),
+                    _ => Err(RuntimeError::new(String::from("Illegal token '") + &token.to_string() + "'"))
                 }
             },
             _ => Err(RuntimeError::new(String::from("Binary operation expected")))

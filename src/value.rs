@@ -21,7 +21,7 @@ impl Value {
             (Float(n1), Float(n2)) => Ok(Float(n1 + n2)),
             (Str(s1), Str(s2)) => Ok(Str(String::from(s1) + &s2)),
             (Str(s), other) => Ok(Str(String::from(s) + &other.to_string())),
-            _ => Err(RuntimeError::new(String::from("Illegal operation ADD")))
+            (_, other) => Err(RuntimeError::new(String::from("Operator '+' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
         }
     }
 
@@ -31,7 +31,7 @@ impl Value {
             (Int(n1), Float(n2)) => Ok(Float(*n1 as f32 - n2)),
             (Float(n1), Int(n2)) => Ok(Float(n1 - n2 as f32)),
             (Float(n1), Float(n2)) => Ok(Float(n1 - n2)),
-            _ => Err(RuntimeError::new(String::from("Illegal operation SUBTRACT")))
+            (_, other) => Err(RuntimeError::new(String::from("Operator '-' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
         }
     }
 
@@ -41,7 +41,7 @@ impl Value {
             (Int(n1), Float(n2)) => Ok(Float(*n1 as f32 * n2)),
             (Float(n1), Int(n2)) => Ok(Float(n1 * n2 as f32)),
             (Float(n1), Float(n2)) => Ok(Float(n1 * n2)),
-            _ => Err(RuntimeError::new(String::from("Illegal operation MULTIPLY")))
+            (_, other) => Err(RuntimeError::new(String::from("Operator '*' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
         }
     }
 
@@ -58,7 +58,7 @@ impl Value {
             (Int(n1), Float(n2)) => Ok(Float(*n1 as f32 / n2)),
             (Float(n1), Int(n2)) => Ok(Float(n1 / n2 as f32)),
             (Float(n1), Float(n2)) => Ok(Float(n1 / n2)),
-            _ => Err(RuntimeError::new(String::from("Illegal operation DIVIDE")))
+            (_, other) => Err(RuntimeError::new(String::from("Operator '/' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
         }
     }
 
@@ -75,8 +75,133 @@ impl Value {
             (Int(n1), Float(n2)) => Ok(Float((*n1 as f32).powf(n2))),
             (Float(n1), Int(n2)) => Ok(Float(n1.powi(n2))),
             (Float(n1), Float(n2)) => Ok(Float(n1.powf(n2))),
-            _ => Err(RuntimeError::new(String::from("Illegal operation RAISE")))
+            (_, other) => Err(RuntimeError::new(String::from("Operator '^' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
         }
+    }
+
+    pub fn is_greater_than(&self, other: Value) -> RuntimeResult {
+        match (self, other) {
+            (Int(n1), Int(n2)) => Ok(Boolean(n1 > &n2)),
+            (Int(n1), Float(n2)) => Ok(Boolean(*n1 as f32 > n2)),
+            (Float(n1), Int(n2)) => Ok(Boolean(n1 > &(n2 as f32))),
+            (Float(n1), Float(n2)) => Ok(Boolean(n1 > &n2)),
+            (_, other) => Err(RuntimeError::new(String::from("Operator '>' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
+        }
+    }
+
+    pub fn is_greater_than_or_equal_to(&self, other: Value) -> RuntimeResult {
+        match (self, other) {
+            (Int(n1), Int(n2)) => Ok(Boolean(n1 >= &n2)),
+            (Int(n1), Float(n2)) => Ok(Boolean(*n1 as f32 >= n2)),
+            (Float(n1), Int(n2)) => Ok(Boolean(n1 >= &(n2 as f32))),
+            (Float(n1), Float(n2)) => Ok(Boolean(n1 >= &n2)),
+            (_, other) => Err(RuntimeError::new(String::from("Operator '>' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
+        }
+    }
+
+    pub fn is_less_than(&self, other: Value) -> RuntimeResult {
+        match (self, other) {
+            (Int(n1), Int(n2)) => Ok(Boolean(n1 < &n2)),
+            (Int(n1), Float(n2)) => Ok(Boolean((*n1 as f32) < n2)),
+            (Float(n1), Int(n2)) => Ok(Boolean(n1 < &(n2 as f32))),
+            (Float(n1), Float(n2)) => Ok(Boolean(n1 < &n2)),
+            (_, other) => Err(RuntimeError::new(String::from("Operator '>' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
+        }
+    }
+
+    pub fn is_less_than_or_equal_to(&self, other: Value) -> RuntimeResult {
+        match (self, other) {
+            (Int(n1), Int(n2)) => Ok(Boolean(n1 <= &n2)),
+            (Int(n1), Float(n2)) => Ok(Boolean((*n1 as f32) <= n2)),
+            (Float(n1), Int(n2)) => Ok(Boolean(n1 <= &(n2 as f32))),
+            (Float(n1), Float(n2)) => Ok(Boolean(n1 <= &n2)),
+            (_, other) => Err(RuntimeError::new(String::from("Operator '>' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
+        }
+    }
+
+    pub fn equals(&self, other: Value) -> RuntimeResult {
+        match (self, other) {
+            (Int(n1), Int(n2)) => Ok(Boolean(n1 == &n2)),
+            (Int(n1), Float(n2)) => Ok(Boolean((*n1 as f32) == n2)),
+            (Float(n1), Int(n2)) => Ok(Boolean(n1 == &(n2 as f32))),
+            (Float(n1), Float(n2)) => Ok(Boolean(n1 == &n2)),
+            (Boolean(b1), Boolean(b2)) => Ok(Boolean(b1 == &b2)),
+            (Str(s1), Str(s2)) => Ok(Boolean(s1 == &s2)),
+            (Null, Null) => Ok(Boolean(true)),
+            (_, other) => Err(RuntimeError::new(String::from("Cannot compare '") + &self.to_string() + "' with '" + &other.to_string()))
+        }
+    }
+
+    pub fn is_true(&self) -> bool {
+        match self {
+            Int(n) => *n != 0,
+            Float(n) => *n != 0.0,
+            Boolean(b) => *b,
+            Str(s) => s != "",
+            Null => false
+        }
+    }
+
+    pub fn bitwise_and(&self, other: Value) -> RuntimeResult {
+        match (self, other) {
+            (Int(n1), Int(n2)) => Ok(Int(n1 & n2)),
+            (_, other) => Err(RuntimeError::new(String::from("Operator '&' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string() + "'."))
+        }
+    }
+
+    pub fn bitwise_or(&self, other: Value) -> RuntimeResult {
+        match (self, other) {
+            (Int(n1), Int(n2)) => Ok(Int(n1 | n2)),
+            (_, other) => Err(RuntimeError::new(String::from("Operator '|' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string() + "'."))
+        }
+    }
+
+    pub fn bitwise_xor(&self, other: Value) -> RuntimeResult {
+        match (self, other) {
+            (Int(n1), Int(n2)) => Ok(Int(n1 ^ n2)),
+            (_, other) => Err(RuntimeError::new(String::from("Operator '^^' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string() + "'."))
+        }
+    }
+
+    pub fn bitwise_not(&self) -> RuntimeResult {
+        match self {
+            Int(n) => Ok(Int(!n)),
+            _ => Err(RuntimeError::new(String::from("Operator '~' cannot be applied to '") + &self.to_string() + "'."))
+        }
+    }
+
+    pub fn left_shift(&self, other: Value) -> RuntimeResult {
+        match (self, other) {
+            (Int(n1), Int(n2)) => Ok(Int(n1 << n2)),
+            (_, other) => Err(RuntimeError::new(String::from("Operator '<<' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string() + "'."))
+        }
+    }
+
+    pub fn right_shift(&self, other: Value) -> RuntimeResult {
+        match (self, other) {
+            (Int(n1), Int(n2)) => Ok(Int(n1 >> n2)),
+            (_, other) => Err(RuntimeError::new(String::from("Operator '>>' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string() + "'."))
+        }
+    }
+
+    pub fn logical_or(&self, other: Value) -> RuntimeResult {
+        if self.is_true() {
+            Ok(self.clone())
+        } else {
+            Ok(other)
+        }
+    }
+
+    pub fn logical_and(&self, other: Value) -> RuntimeResult {
+        if self.is_true() {
+            Ok(other)
+        } else {
+            Ok(self.clone())
+        }
+    }
+
+    pub fn logical_not(&self) -> RuntimeResult {
+        Ok(Boolean(!self.is_true()))
     }
 
     pub fn to_string(&self) -> String {

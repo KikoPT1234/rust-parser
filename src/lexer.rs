@@ -40,9 +40,14 @@ impl Lexer {
                             '*' => TokenType::Mul,
                             '/' => TokenType::Div,
                             '^' => TokenType::Pow,
-                            '=' => TokenType::Eq,
                             ';' => TokenType::Semicolon,
                             '"' => self.make_string()?,
+                            '=' => self.make_equals()?,
+                            '!' => self.make_not_equals()?,
+                            '>' => self.make_greater_than()?,
+                            '<' => self.make_less_than()?,
+                            '|' => self.make_or()?,
+                            '&' => self.make_and()?,
                             ' ' => {
                                 self.next();
                                 continue;
@@ -172,6 +177,108 @@ impl Lexer {
             Ok(TokenType::Keyword(identifier_string))
         } else {
             Ok(TokenType::Identifier(identifier_string))
+        }
+    }
+
+    fn make_equals(&mut self) -> LexResult {
+        self.next();
+        
+        match self.current_char {
+            Some(current_char) => {
+                if current_char == '=' {
+                    self.next();
+                    return Ok(TokenType::EE);
+                } else {
+                    return Ok(TokenType::Eq);
+                }
+            },
+            None => Err(LexError::new(String::from("Expected '='")))
+        }
+    }
+
+    fn make_not_equals(&mut self) -> LexResult {
+        self.next();
+
+        match self.current_char {
+            Some(current_char) => {
+                if current_char == '=' {
+                    self.next();
+                    return Ok(TokenType::NE);
+                } else {
+                    return Ok(TokenType::Not);
+                }
+            },
+            None => Err(LexError::new(String::from("Expected '='")))
+        }
+    }
+
+    fn make_greater_than(&mut self) -> LexResult {
+        self.next();
+        
+        match self.current_char {
+            Some(current_char) => {
+                if current_char == '=' {
+                    self.next();
+                    Ok(TokenType::GTE)
+                } else if current_char == '>' {
+                    self.next();
+                    Ok(TokenType::BitwiseRightShift)
+                } else {
+                    Ok(TokenType::GT)
+                }
+            },
+            None => Err(LexError::new(String::from("Expected '>'")))
+        }
+    }
+
+    fn make_less_than(&mut self) -> LexResult {
+        self.next();
+        
+        match self.current_char {
+            Some(current_char) => {
+                if current_char == '=' {
+                    self.next();
+                    Ok(TokenType::LTE)
+                } else if current_char == '<' {
+                    self.next();
+                    Ok(TokenType::BitwiseLeftShift)
+                } else {
+                    Ok(TokenType::LT)
+                }
+            },
+            None => Err(LexError::new(String::from("Expected '<'")))
+        }
+    }
+
+    fn make_or(&mut self) -> LexResult {
+        self.next();
+        
+        match self.current_char {
+            Some(current_char) => {
+                if current_char == '|' {
+                    self.next();
+                    return Ok(TokenType::Or);
+                } else {
+                    return Ok(TokenType::BitwiseOr);
+                }
+            },
+            None => Err(LexError::new(String::from("Expected '|'")))
+        }
+    }
+
+    fn make_and(&mut self) -> LexResult {
+        self.next();
+        
+        match self.current_char {
+            Some(current_char) => {
+                if current_char == '&' {
+                    self.next();
+                    return Ok(TokenType::And);
+                } else {
+                    return Ok(TokenType::BitwiseAnd);
+                }
+            },
+            None => Err(LexError::new(String::from("Expected '&'")))
         }
     }
 
