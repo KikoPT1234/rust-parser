@@ -35,12 +35,30 @@ impl Lexer {
                         token_type = self.make_identifier()?;
                     } else {
                         token_type = match current_char {
-                            '+' => TokenType::Plus,
-                            '-' => TokenType::Minus,
-                            '*' => TokenType::Mul,
-                            '/' => TokenType::Div,
-                            '^' => TokenType::Pow,
-                            ';' => TokenType::Semicolon,
+                            '+' => {
+                                self.next();
+                                TokenType::Plus
+                            },
+                            '-' => {
+                                self.next();
+                                TokenType::Minus
+                            },
+                            '*' => {
+                                self.next();
+                                TokenType::Mul
+                            },
+                            '/' => {
+                                self.next();
+                                TokenType::Div
+                            },
+                            '^' => {
+                                self.next();
+                                TokenType::Pow
+                            },
+                            ';' => {
+                                self.next();
+                                TokenType::Semicolon
+                            },
                             '"' => self.make_string()?,
                             '=' => self.make_equals()?,
                             '!' => self.make_not_equals()?,
@@ -48,6 +66,7 @@ impl Lexer {
                             '<' => self.make_less_than()?,
                             '|' => self.make_or()?,
                             '&' => self.make_and()?,
+                            // '[' => TokenType::
                             ' ' => {
                                 self.next();
                                 continue;
@@ -71,7 +90,6 @@ impl Lexer {
                                 return Err(LexError::new(error));
                             }
                         };
-                        self.next();
                     }
                 },
                 None => {
