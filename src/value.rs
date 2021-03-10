@@ -1,5 +1,6 @@
 use crate::interpreter::RuntimeResult;
 use crate::error::RuntimeError;
+use crate::node::Node;
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -7,6 +8,7 @@ pub enum Value {
     Float(f32),
     Str(String),
     Boolean(bool),
+    Func(String, Vec<String>, Box<Node>),
     Null
 }
 
@@ -21,7 +23,7 @@ impl Value {
             (Float(n1), Float(n2)) => Ok(Float(n1 + n2)),
             (Str(s1), Str(s2)) => Ok(Str(String::from(s1) + &s2)),
             (Str(s), other) => Ok(Str(String::from(s) + &other.to_string())),
-            (_, other) => Err(RuntimeError::new(String::from("Operator '+' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
+            (_, other) => Err(RuntimeError::new(String::from("Operator '+' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string() + "'."))
         }
     }
 
@@ -31,7 +33,7 @@ impl Value {
             (Int(n1), Float(n2)) => Ok(Float(*n1 as f32 - n2)),
             (Float(n1), Int(n2)) => Ok(Float(n1 - n2 as f32)),
             (Float(n1), Float(n2)) => Ok(Float(n1 - n2)),
-            (_, other) => Err(RuntimeError::new(String::from("Operator '-' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
+            (_, other) => Err(RuntimeError::new(String::from("Operator '-' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string() + "'."))
         }
     }
 
@@ -41,7 +43,7 @@ impl Value {
             (Int(n1), Float(n2)) => Ok(Float(*n1 as f32 * n2)),
             (Float(n1), Int(n2)) => Ok(Float(n1 * n2 as f32)),
             (Float(n1), Float(n2)) => Ok(Float(n1 * n2)),
-            (_, other) => Err(RuntimeError::new(String::from("Operator '*' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
+            (_, other) => Err(RuntimeError::new(String::from("Operator '*' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string() + "'."))
         }
     }
 
@@ -58,7 +60,7 @@ impl Value {
             (Int(n1), Float(n2)) => Ok(Float(*n1 as f32 / n2)),
             (Float(n1), Int(n2)) => Ok(Float(n1 / n2 as f32)),
             (Float(n1), Float(n2)) => Ok(Float(n1 / n2)),
-            (_, other) => Err(RuntimeError::new(String::from("Operator '/' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
+            (_, other) => Err(RuntimeError::new(String::from("Operator '/' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string() + "'."))
         }
     }
 
@@ -75,7 +77,7 @@ impl Value {
             (Int(n1), Float(n2)) => Ok(Float((*n1 as f32).powf(n2))),
             (Float(n1), Int(n2)) => Ok(Float(n1.powi(n2))),
             (Float(n1), Float(n2)) => Ok(Float(n1.powf(n2))),
-            (_, other) => Err(RuntimeError::new(String::from("Operator '^' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
+            (_, other) => Err(RuntimeError::new(String::from("Operator '^' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string() + "'."))
         }
     }
 
@@ -85,7 +87,7 @@ impl Value {
             (Int(n1), Float(n2)) => Ok(Boolean(*n1 as f32 > n2)),
             (Float(n1), Int(n2)) => Ok(Boolean(n1 > &(n2 as f32))),
             (Float(n1), Float(n2)) => Ok(Boolean(n1 > &n2)),
-            (_, other) => Err(RuntimeError::new(String::from("Operator '>' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
+            (_, other) => Err(RuntimeError::new(String::from("Operator '>' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string() + "'."))
         }
     }
 
@@ -95,7 +97,7 @@ impl Value {
             (Int(n1), Float(n2)) => Ok(Boolean(*n1 as f32 >= n2)),
             (Float(n1), Int(n2)) => Ok(Boolean(n1 >= &(n2 as f32))),
             (Float(n1), Float(n2)) => Ok(Boolean(n1 >= &n2)),
-            (_, other) => Err(RuntimeError::new(String::from("Operator '>' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
+            (_, other) => Err(RuntimeError::new(String::from("Operator '>' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string() + "'."))
         }
     }
 
@@ -105,7 +107,7 @@ impl Value {
             (Int(n1), Float(n2)) => Ok(Boolean((*n1 as f32) < n2)),
             (Float(n1), Int(n2)) => Ok(Boolean(n1 < &(n2 as f32))),
             (Float(n1), Float(n2)) => Ok(Boolean(n1 < &n2)),
-            (_, other) => Err(RuntimeError::new(String::from("Operator '>' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
+            (_, other) => Err(RuntimeError::new(String::from("Operator '>' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string() + "'."))
         }
     }
 
@@ -115,7 +117,7 @@ impl Value {
             (Int(n1), Float(n2)) => Ok(Boolean((*n1 as f32) <= n2)),
             (Float(n1), Int(n2)) => Ok(Boolean(n1 <= &(n2 as f32))),
             (Float(n1), Float(n2)) => Ok(Boolean(n1 <= &n2)),
-            (_, other) => Err(RuntimeError::new(String::from("Operator '>' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string()))
+            (_, other) => Err(RuntimeError::new(String::from("Operator '>' cannot be applied to '") + &self.to_string() + "', '" + &other.to_string() + "'."))
         }
     }
 
@@ -128,7 +130,7 @@ impl Value {
             (Boolean(b1), Boolean(b2)) => Ok(Boolean(b1 == &b2)),
             (Str(s1), Str(s2)) => Ok(Boolean(s1 == &s2)),
             (Null, Null) => Ok(Boolean(true)),
-            (_, other) => Err(RuntimeError::new(String::from("Cannot compare '") + &self.to_string() + "' with '" + &other.to_string()))
+            (_, other) => Err(RuntimeError::new(String::from("Cannot compare '") + &self.to_string() + "' with '" + &other.to_string() + "'."))
         }
     }
 
@@ -138,6 +140,7 @@ impl Value {
             Float(n) => *n != 0.0,
             Boolean(b) => *b,
             Str(s) => s != "",
+            Func(_, _, _) => true,
             Null => false
         }
     }
@@ -210,6 +213,7 @@ impl Value {
             Float(n) => n.to_string(),
             Boolean(b) => b.to_string(),
             Str(s) => String::from(s),
+            Func(name, args, _) => name.clone() + "(" + &args.join(", ") + ")",
             Null => String::from("null")
         }
     }

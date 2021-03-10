@@ -19,12 +19,16 @@ fn main() {
     print!("> ");
     io::stdout().flush().unwrap();
 
-    let mut context = Context::new(None);
+    // let mut context = Context::new(None);
+    // context.symbol_table.set("true", Value::Boolean(true));
+    // context.symbol_table.set("false", Value::Boolean(false));
+    // context.symbol_table.set("null", Value::Null);
+
+    loop {
+        let mut context = Context::new(None);
     context.symbol_table.set("true", Value::Boolean(true));
     context.symbol_table.set("false", Value::Boolean(false));
     context.symbol_table.set("null", Value::Null);
-
-    loop {
         let mut code = String::new();
 
         stdin().read_line(&mut code).unwrap();
@@ -35,7 +39,7 @@ fn main() {
     }
 }
 
-fn run(code: &str, context: &mut Context) {
+fn run<'a>(code: &str, context: &'a mut Context<'a>) {
     
 
     let mut lexer = Lexer::new(&code);

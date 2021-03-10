@@ -9,12 +9,12 @@ pub type RuntimeResult = Result<Value, RuntimeError>;
 
 pub struct Interpreter {}
 
-impl Interpreter {
+impl<'a> Interpreter {
     pub fn new() -> Interpreter {
         Interpreter {}
     }
 
-    pub fn visit(&self, node: &Node, context: &mut Context) -> RuntimeResult {
+    pub fn visit(&self, node: &Node, context: &'a mut Context<'a>) -> RuntimeResult {
         match node {
             Node::Statements(_, _) => self.visit_statements_node(node, context),
             Node::Int(_) => self.visit_int_node(node, context),
@@ -24,11 +24,13 @@ impl Interpreter {
             Node::BinaryOp(_, _, _) => self.visit_binary_op_node(node, context),
             Node::VarDef(_, _) => self.visit_var_def_node(node, context),
             Node::VarAcc(_) => self.visit_var_acc_node(node, context),
+            Node::FuncDef(_, _, _) => self.visit_func_def_node(node, context),
+            Node::FuncCall(_, _) => self.visit_func_call_node(node, context),
             Node::Empty => Ok(Value::Null)
         }
     }
 
-    fn visit_statements_node(&self, node: &Node, context: &mut Context) -> RuntimeResult {
+    fn visit_statements_node(&self, node: &Node, context: &'a mut Context<'a>) -> RuntimeResult {
         match node {
             Node::Statements(nodes, should_return_last) => {
                 let mut value = Value::Null;
@@ -47,28 +49,28 @@ impl Interpreter {
         }
     }
 
-    fn visit_int_node(&self, node: &Node, _context: &mut Context) -> RuntimeResult {
+    fn visit_int_node(&self, node: &Node, _context: &'a mut Context<'a>) -> RuntimeResult {
         match node {
             Node::Int(n) => Ok(Value::Int(*n)),
             _ => Err(RuntimeError::new(String::from("Integer expected")))
         }
     }
 
-    fn visit_float_node(&self, node: &Node, _context: &mut Context) -> RuntimeResult {
+    fn visit_float_node(&self, node: &Node, _context: &'a mut Context<'a>) -> RuntimeResult {
         match node {
             Node::Float(n) => Ok(Value::Float(*n)),
             _ => Err(RuntimeError::new(String::from("Float expected")))
         }
     }
 
-    fn visit_string_node(&self, node: &Node, _context: &mut Context) -> RuntimeResult {
+    fn visit_string_node(&self, node: &Node, _context: &'a mut Context<'a>) -> RuntimeResult {
         match node {
             Node::Str(string) => Ok(Value::Str(string.as_str().to_string())),
             _ => Err(RuntimeError::new(String::from("String expected")))
         }
     }
 
-    fn visit_unary_op_node(&self, node: &Node, context: &mut Context) -> RuntimeResult {
+    fn visit_unary_op_node(&self, node: &Node, context: &'a mut Context<'a>) -> RuntimeResult {
         match node {
             Node::UnaryOp(node, token) => {
                 let value = self.visit(node, context)?;
@@ -76,6 +78,8 @@ impl Interpreter {
                 match token {
                     TokenType::Plus => Ok(value.multiply(Value::Int(1))?),
                     TokenType::Minus => Ok(value.multiply(Value::Int(-1))?),
+                    TokenType::BitwiseNot => Ok(value.bitwise_not()?),
+                    TokenType::Not => Ok(value.logical_not()?),
                     _ => Ok(value)
                 }
             },
@@ -83,7 +87,7 @@ impl Interpreter {
         }
     }
 
-    fn visit_binary_op_node(&self, node: &Node, context: &mut Context) -> RuntimeResult {
+    fn visit_binary_op_node(&self, node: &Node, context: &'a mut Context<'a>) -> RuntimeResult {
         match node {
             Node::BinaryOp(left_node, token, right_node) => {
                 let left = self.visit(left_node, context)?;
@@ -121,7 +125,7 @@ impl Interpreter {
         }
     }
 
-    fn visit_var_def_node(&self, node: &Node, context: &mut Context) -> RuntimeResult {
+    fn visit_var_def_node(&self, node: &Node, context: &'a mut Context<'a>) -> RuntimeResult {
         match node {
             Node::VarDef(name, value_node) => {
                 let value = self.visit(value_node, context)?;
@@ -136,7 +140,7 @@ impl Interpreter {
         }
     }
 
-    fn visit_var_acc_node(&self, node: &Node, context: &mut Context) -> RuntimeResult {
+    fn visit_var_acc_node(&self, node: &Node, context: &'a mut Context<'a>) -> RuntimeResult {
         match node {
             Node::VarAcc(name) => {
                 match context.symbol_table.get(name) {
@@ -147,15 +151,43 @@ impl Interpreter {
             _ => Err(RuntimeError::new(String::from("Var access expected")))
         }
     }
+
+    fn visit_func_def_node(&self, node: &Node, _context: &'a mut Context<'a>) -> RuntimeResult {
+        match node {
+            Node::FuncDef(name, args, body) => {
+                Ok(Value::Func(name.clone(), args.clone(), body.clone()))
+            }
+            _ => Err(RuntimeError::new(String::from("Func definition expected")))
+        }
+    }
+
+    fn visit_func_call_node(&self, node: &Node, context: &'a mut Context<'a>) -> RuntimeResult {
+        match node {
+            Node::FuncCall(func, args) => {
+                let function = self.visit(func, context)?;
+
+                match function {
+                    Value::Func(name, params, body) => {
+                        let new_context = Context::new(Some(context));
+
+                        Ok(Value::Null)
+                    },
+                    _ => Err(RuntimeError::new(function.to_string() + " is not a function"))
+                }
+            }
+            _ => Err(RuntimeError::new(String::from("Func call expected")))
+        }
+    }
 }
 
+#[derive(Debug)]
 pub struct Context<'a> {
-    pub parent: Option<&'a Context<'a>>,
-    pub symbol_table: SymbolTable
+    pub parent: Option<&'a mut Context<'a>>,
+    pub symbol_table: SymbolTable<'a>
 }
 
 impl<'a> Context<'a> {
-    pub fn new(parent: Option<&'a Context>) -> Context<'a> {
+    pub fn new(parent: Option<&'a mut Context<'a>>) -> Context<'a> {
         Context {
             parent,
             symbol_table: SymbolTable::new()
@@ -163,14 +195,17 @@ impl<'a> Context<'a> {
     }
 }
 
-pub struct SymbolTable {
-    symbols: HashMap<String, Value>
+#[derive(Debug)]
+pub struct SymbolTable<'a> {
+    pub symbols: HashMap<String, Value>,
+    context: Option<&'a mut Context<'a>>
 }
 
-impl SymbolTable {
+impl<'a> SymbolTable<'a> {
     pub fn new() -> Self {
         SymbolTable {
-            symbols: HashMap::new()
+            symbols: HashMap::new(),
+            context: None
         }
     }
 
@@ -181,7 +216,18 @@ impl SymbolTable {
     pub fn get(&mut self, name: &str) -> Option<Value> {
         match self.symbols.get(name) {
             Some(value) => Some(value.clone()),
-            None => None
+            None => {
+                match &mut self.context {
+                    Some(context) => {
+                        context.symbol_table.get(name)
+                    },
+                    None => None
+                }
+            }
         }
+    }
+
+    pub fn set_context(&mut self, context: &'a mut Context<'a>) {
+        self.context = Some(context);
     }
 }

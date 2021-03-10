@@ -47,18 +47,42 @@ impl Lexer {
                                 self.next();
                                 TokenType::Mul
                             },
-                            '/' => {
-                                self.next();
-                                TokenType::Div
-                            },
-                            '^' => {
-                                self.next();
-                                TokenType::Pow
-                            },
                             ';' => {
                                 self.next();
                                 TokenType::Semicolon
                             },
+                            '(' => {
+                                self.next();
+                                TokenType::LeftParen
+                            },
+                            ')' => {
+                                self.next();
+                                TokenType::RightParen
+                            },
+                            '[' => {
+                                self.next();
+                                TokenType::LeftSquare
+                            },
+                            ']' => {
+                                self.next();
+                                TokenType::RightSquare
+                            },
+                            '{' => {
+                                self.next();
+                                TokenType::LeftBracket
+                            },
+                            '}' => {
+                                self.next();
+                                TokenType::RightBracket
+                            },
+                            ',' => {
+                                self.next();
+                                TokenType::Comma
+                            },
+                            '~' => {
+                                self.next();
+                                TokenType::BitwiseNot
+                            }
                             '"' => self.make_string()?,
                             '=' => self.make_equals()?,
                             '!' => self.make_not_equals()?,
@@ -66,7 +90,7 @@ impl Lexer {
                             '<' => self.make_less_than()?,
                             '|' => self.make_or()?,
                             '&' => self.make_and()?,
-                            // '[' => TokenType::
+                            '^' => self.make_pow()?,
                             ' ' => {
                                 self.next();
                                 continue;
@@ -297,6 +321,22 @@ impl Lexer {
                 }
             },
             None => Err(LexError::new(String::from("Expected '&'")))
+        }
+    }
+
+    fn make_pow(&mut self) -> LexResult {
+        self.next();
+        
+        match self.current_char {
+            Some(current_char) => {
+                if current_char == '^' {
+                    self.next();
+                    return Ok(TokenType::BitwiseXOr);
+                } else {
+                    return Ok(TokenType::Pow);
+                }
+            },
+            None => Err(LexError::new(String::from("Expected '^'")))
         }
     }
 
