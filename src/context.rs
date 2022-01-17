@@ -14,7 +14,7 @@ pub struct Context {
 impl Context {
     pub fn new(manager: &ContextManager, parent: Option<i32>) -> Context {
 
-        let mut id: i32 = 0;
+        let mut id: i32;
 
         let mut rng = rand::thread_rng();
 
@@ -82,7 +82,7 @@ impl ContextManager {
     }
 
     pub fn create_context(&mut self, parent: Option<i32>) -> i32 {
-        let mut context = Context::new(self, parent);
+        let context = Context::new(self, parent);
 
         let id = context.id;
 
