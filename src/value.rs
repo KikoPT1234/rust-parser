@@ -10,6 +10,7 @@ pub enum Value {
     Str(String),
     Boolean(bool),
     Func(String, Vec<String>, Box<Node>, i32),
+    List(Vec<Value>),
     Pointer(i32, String),
     Null
 }
@@ -161,7 +162,7 @@ impl Value {
             (Str(s1), Str(s2)) => Ok(Boolean(s1 == &s2)),
             (Null, Null) => Ok(Boolean(true)),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().equals(other, manager),
-            (_, Pointer(_, _)) => self.equals(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.equals(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Cannot compare '") + &self.to_string(manager) + "' with '" + &other.to_string(manager) + "'."))
         }
     }
@@ -173,6 +174,7 @@ impl Value {
             Boolean(b) => *b,
             Str(s) => s != "",
             Func(..) => true,
+            List(vec) => !vec.is_empty(),
             Pointer(_, _) => Value::deref(self, manager).unwrap().is_true(manager),
             Null => false
         }
@@ -258,6 +260,25 @@ impl Value {
             Boolean(b) => b.to_string(),
             Str(s) => String::from(s),
             Func(name, args, _, _) => name.clone() + "(" + &args.join(", ") + ")",
+            List(vec) => {
+                let mut string = String::from("[");
+
+                for item in 0..vec.len() {
+                    match &vec.get(item) {
+                        Some(val) => {
+                            string += &val.to_string(manager);
+                            if item < vec.len() - 1 {
+                                string += ", "
+                            }
+                        },
+                        None => break
+                    }
+                }
+
+                string += "]";
+
+                string
+            },
             Pointer(context_id, name) => match manager.get(*context_id, name) {
                 Some(value) => value.to_string(manager),
                 None => String::from("null")

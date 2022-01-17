@@ -108,14 +108,11 @@ impl<'a> Interpreter<'a> {
                     &TokenType::Pow => left.raise(right, &self.manager),
                     &TokenType::EE => left.equals(right, &self.manager),
                     &TokenType::NE => {
-                        match left.equals(right, &self.manager) {
-                            Ok(not_equals) => {
-                                match not_equals {
-                                    Value::Boolean(b) => Ok(Value::Boolean(!b)),
-                                    right => Err(RuntimeError::new(String::from("Comparing '") + &left.to_string(&self.manager) + "' with '" + &right.to_string(&self.manager) + "' gave a non-boolean value."))
-                                }
-                            },
-                            Err(err) => Err(err)
+                        let not_equals = left.equals(right, &self.manager)?;
+
+                        match not_equals {
+                            Value::Boolean(b) => Ok(Value::Boolean(!b)),
+                            right => Err(RuntimeError::new(String::from("Comparing '") + &left.to_string(&self.manager) + "' with '" + &right.to_string(&self.manager) + "' gave a non-boolean value."))
                         }
                     },
                     &TokenType::GT => left.is_greater_than(right, &self.manager),
