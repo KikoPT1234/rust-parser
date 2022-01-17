@@ -169,6 +169,7 @@ impl Lexer {
             loop {
                 if let Some(current_char) = self.current_char {
                     if current_char == character {
+                        self.next();
                         break;
                     } else if current_char == '\\' {
                         special = true;

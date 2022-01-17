@@ -183,7 +183,10 @@ impl Parser {
 
             let node = self.atom()?;
 
-            return Ok(Node::UnaryOp(Box::new(node), current_token));
+            return match node {
+                Node::Empty => Err(ParseError::new(String::from("Unexpected end of file."))),
+                _ => Ok(Node::UnaryOp(Box::new(node), current_token))
+            }
         }
 
         self.call()
@@ -256,7 +259,16 @@ impl Parser {
 
             self.next();
 
-            let right = func(self)?;
+            let right;
+
+            match op_token {
+                TokenType::Pow => {
+                    right = self.binary_operation(func, token_types)?;
+                },
+                _ => {
+                    right = func(self)?;
+                }
+            }
 
             left = Node::BinaryOp(Box::new(left), op_token, Box::new(right));
         }
