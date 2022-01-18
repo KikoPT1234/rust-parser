@@ -19,16 +19,17 @@ impl<'a> Interpreter<'a> {
 
     pub fn visit(&mut self, node: &Node, context_id: i32) -> RuntimeResult {
         match node {
-            Node::Statements(_, _) => self.visit_statements_node(node, context_id),
-            Node::Int(_) => self.visit_int_node(node, context_id),
-            Node::Float(_) => self.visit_float_node(node, context_id),
-            Node::Str(_) => self.visit_string_node(node, context_id),
-            Node::UnaryOp(_, _) => self.visit_unary_op_node(node, context_id),
-            Node::BinaryOp(_, _, _) => self.visit_binary_op_node(node, context_id),
-            Node::VarDef(_, _) => self.visit_var_def_node(node, context_id),
-            Node::VarAcc(_) => self.visit_var_acc_node(node, context_id),
-            Node::FuncDef(_, _, _) => self.visit_func_def_node(node, context_id),
-            Node::FuncCall(_, _) => self.visit_func_call_node(node, context_id),
+            Node::Statements(..) => self.visit_statements_node(node, context_id),
+            Node::Int(..) => self.visit_int_node(node, context_id),
+            Node::Float(..) => self.visit_float_node(node, context_id),
+            Node::Str(..) => self.visit_string_node(node, context_id),
+            Node::UnaryOp(..) => self.visit_unary_op_node(node, context_id),
+            Node::BinaryOp(..) => self.visit_binary_op_node(node, context_id),
+            Node::VarDef(..) => self.visit_var_def_node(node, context_id),
+            Node::VarAcc(..) => self.visit_var_acc_node(node, context_id),
+            Node::ListDef(..) => self.visit_list_def_node(node, context_id),
+            Node::FuncDef(..) => self.visit_func_def_node(node, context_id),
+            Node::FuncCall(..) => self.visit_func_call_node(node, context_id),
             Node::Empty => Ok(Value::Null)
         }
     }
@@ -155,11 +156,33 @@ impl<'a> Interpreter<'a> {
         match node {
             Node::VarAcc(name) => {
                 match self.manager.get(context_id, name) {
-                    Some(_) => Ok(Value::Pointer(context_id, name.to_string())),
+                    Some(value) => {
+                        match value {
+                            Value::List(..) => Ok(Value::Pointer(context_id, name.to_string())),
+                            Value::Func(..) => Ok(Value::Pointer(context_id, name.to_string())),
+                            Value::Str(..) => Ok(Value::Pointer(context_id, name.to_string())),
+                            _ => Ok(value.clone())
+                        }
+                    },
                     None => Err(RuntimeError::new(String::from(name) + " is not defined"))
                 }
             }
             _ => Err(RuntimeError::new(String::from("Var access expected")))
+        }
+    }
+
+    fn visit_list_def_node(&mut self, node: &Node, context_id: i32) -> RuntimeResult {
+        match node {
+            Node::ListDef(nodes) => {
+                let mut values = vec![];
+
+                for node in nodes {
+                    values.push(self.visit(node, context_id)?);
+                }
+
+                Ok(Value::List(values))
+            }
+            _ => Err(RuntimeError::new(String::from("List def expected")))
         }
     }
 

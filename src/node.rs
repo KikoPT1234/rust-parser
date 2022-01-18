@@ -9,6 +9,7 @@ pub enum Node {
     UnaryOp(Box<Node>, TokenType),
     VarDef(String, Box<Node>),
     VarAcc(String),
+    ListDef(Vec<Box<Node>>),
     FuncDef(String, Vec<String>, Box<Node>),
     FuncCall(Box<Node>, Vec<Box<Node>>),
     Statements(Vec<Box<Node>>, bool),

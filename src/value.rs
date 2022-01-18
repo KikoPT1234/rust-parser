@@ -37,7 +37,7 @@ impl Value {
             (Str(s1), Str(s2)) => Ok(Str(String::from(s1) + &s2)),
             (Str(s), other) => Ok(Str(String::from(s) + &other.to_string(manager))),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().add(other, manager),
-            (_, Pointer(_, _)) => self.add(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.add(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '+' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
         }
     }
@@ -49,7 +49,7 @@ impl Value {
             (Float(n1), Int(n2)) => Ok(Float(n1 - n2 as f32)),
             (Float(n1), Float(n2)) => Ok(Float(n1 - n2)),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().subtract(other, manager),
-            (_, Pointer(_, _)) => self.subtract(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.subtract(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '-' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
         }
     }
@@ -61,7 +61,7 @@ impl Value {
             (Float(n1), Int(n2)) => Ok(Float(n1 * n2 as f32)),
             (Float(n1), Float(n2)) => Ok(Float(n1 * n2)),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().multiply(other, manager),
-            (_, Pointer(_, _)) => self.multiply(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.multiply(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '*' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
         }
     }
@@ -80,7 +80,7 @@ impl Value {
             (Float(n1), Int(n2)) => Ok(Float(n1 / n2 as f32)),
             (Float(n1), Float(n2)) => Ok(Float(n1 / n2)),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().divide(other, manager),
-            (_, Pointer(_, _)) => self.divide(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.divide(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '/' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
         }
     }
@@ -99,7 +99,7 @@ impl Value {
             (Float(n1), Int(n2)) => Ok(Float(n1.powi(n2))),
             (Float(n1), Float(n2)) => Ok(Float(n1.powf(n2))),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().raise(other, manager),
-            (_, Pointer(_, _)) => self.raise(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.raise(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '^' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
         }
     }
@@ -111,7 +111,7 @@ impl Value {
             (Float(n1), Int(n2)) => Ok(Boolean(n1 > &(n2 as f32))),
             (Float(n1), Float(n2)) => Ok(Boolean(n1 > &n2)),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().is_greater_than(other, manager),
-            (_, Pointer(_, _)) => self.is_greater_than(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.is_greater_than(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '>' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
         }
     }
@@ -123,7 +123,7 @@ impl Value {
             (Float(n1), Int(n2)) => Ok(Boolean(n1 >= &(n2 as f32))),
             (Float(n1), Float(n2)) => Ok(Boolean(n1 >= &n2)),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().is_greater_than_or_equal_to(other, manager),
-            (_, Pointer(_, _)) => self.is_greater_than_or_equal_to(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.is_greater_than_or_equal_to(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '>=' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
         }
     }
@@ -135,7 +135,7 @@ impl Value {
             (Float(n1), Int(n2)) => Ok(Boolean(n1 < &(n2 as f32))),
             (Float(n1), Float(n2)) => Ok(Boolean(n1 < &n2)),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().is_less_than(other, manager),
-            (_, Pointer(_, _)) => self.is_less_than(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.is_less_than(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '<' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
         }
     }
@@ -147,7 +147,7 @@ impl Value {
             (Float(n1), Int(n2)) => Ok(Boolean(n1 <= &(n2 as f32))),
             (Float(n1), Float(n2)) => Ok(Boolean(n1 <= &n2)),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().is_less_than_or_equal_to(other, manager),
-            (_, Pointer(_, _)) => self.is_less_than_or_equal_to(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.is_less_than_or_equal_to(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '<=' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
         }
     }
@@ -184,7 +184,7 @@ impl Value {
         match (self, other) {
             (Int(n1), Int(n2)) => Ok(Int(n1 & n2)),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().bitwise_and(other, manager),
-            (_, Pointer(_, _)) => self.bitwise_and(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.bitwise_and(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '&' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
         }
     }
@@ -193,7 +193,7 @@ impl Value {
         match (self, other) {
             (Int(n1), Int(n2)) => Ok(Int(n1 | n2)),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().bitwise_or(other, manager),
-            (_, Pointer(_, _)) => self.bitwise_or(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.bitwise_or(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '|' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
         }
     }
@@ -202,7 +202,7 @@ impl Value {
         match (self, other) {
             (Int(n1), Int(n2)) => Ok(Int(n1 ^ n2)),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().bitwise_xor(other, manager),
-            (_, Pointer(_, _)) => self.bitwise_xor(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.bitwise_xor(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '^^' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
         }
     }
@@ -219,7 +219,7 @@ impl Value {
         match (self, other) {
             (Int(n1), Int(n2)) => Ok(Int(n1 << n2)),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().left_shift(other, manager),
-            (_, Pointer(_, _)) => self.left_shift(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.left_shift(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '<<' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
         }
     }
@@ -228,7 +228,7 @@ impl Value {
         match (self, other) {
             (Int(n1), Int(n2)) => Ok(Int(n1 >> n2)),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().right_shift(other, manager),
-            (_, Pointer(_, _)) => self.right_shift(Value::deref(self, manager).unwrap().clone(), manager),
+            (_, Pointer(id, name)) => self.right_shift(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '>>' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
         }
     }

@@ -28,10 +28,7 @@ fn main() {
 
     let mut manager = ContextManager::new();
 
-    let context = Context::new(&manager, None);
-    let id = context.id;
-
-    manager.add_context(context);
+    let id = manager.create_context(None);
 
     manager.set(id, "true", Value::Boolean(true));
     manager.set(id, "false", Value::Boolean(false));
@@ -57,14 +54,14 @@ fn run(code: &str, mut manager: ContextManager, context_id: i32) -> ContextManag
     match result {
         Err(error) => eprintln!("{}", error.to_string()),
         Ok(tokens) => {
-            // println!("{:?}", tokens);
+            println!("{:?}", tokens);
             let mut parser = Parser::new(tokens);
             let result = parser.parse();
             
             match result {
                 Err(error) => eprintln!("{}", error.to_string()),
                 Ok(node) => {
-                    // println!("{:?}", node);
+                    println!("{:?}", node);
                     let mut interpreter = Interpreter::new(&mut manager);
 
                     match interpreter.visit(&node, context_id) {

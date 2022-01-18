@@ -139,15 +139,15 @@ impl Parser {
     }
 
     fn logical_bitwise_comparison(&mut self) -> ParseResult {
-        self.binary_operation(&mut |this: &mut Self| this.numeric_comparison(), &[TokenType::BitwiseAnd, TokenType::BitwiseOr, TokenType::BitwiseXOr, TokenType::And, TokenType::Or])
+        self.binary_operation(&mut |this: &mut Self| this.numeric_comparison(), &[TokenType::BitwiseAnd, TokenType::BitwiseOr, TokenType::BitwiseXOr, TokenType::And, TokenType::Or], false)
     }
 
     fn numeric_comparison(&mut self) -> ParseResult {
-        self.binary_operation(&mut |this: &mut Self| this.bitwise_shifting(), &[TokenType::EE, TokenType::NE, TokenType::GT, TokenType::GTE, TokenType::LT, TokenType::LTE])
+        self.binary_operation(&mut |this: &mut Self| this.bitwise_shifting(), &[TokenType::EE, TokenType::NE, TokenType::GT, TokenType::GTE, TokenType::LT, TokenType::LTE], false)
     }
 
     fn bitwise_shifting(&mut self) -> ParseResult {
-        self.binary_operation(&mut |this: &mut Self| this.not(), &[TokenType::BitwiseRightShift, TokenType::BitwiseLeftShift])
+        self.binary_operation(&mut |this: &mut Self| this.not(), &[TokenType::BitwiseRightShift, TokenType::BitwiseLeftShift], false)
     }
     
     fn not(&mut self) -> ParseResult {
@@ -165,15 +165,15 @@ impl Parser {
     }
 
     fn term(&mut self) -> ParseResult {
-        self.binary_operation(&mut |this: &mut Self| this.factor(), &[TokenType::Plus, TokenType::Minus])
+        self.binary_operation(&mut |this: &mut Self| this.factor(), &[TokenType::Plus, TokenType::Minus], false)
     }
 
     fn factor(&mut self) -> ParseResult {
-        self.binary_operation(&mut |this: &mut Self| this.power(), &[TokenType::Mul, TokenType::Div])
+        self.binary_operation(&mut |this: &mut Self| this.power(), &[TokenType::Mul, TokenType::Div], false)
     }
 
     fn power(&mut self) -> ParseResult {
-        self.binary_operation(&mut |this: &mut Self| this.unary(), &[TokenType::Pow])
+        self.binary_operation(&mut |this: &mut Self| this.unary(), &[TokenType::Pow], true)
     }
 
     fn unary(&mut self) -> ParseResult {
@@ -193,7 +193,7 @@ impl Parser {
     }
 
     fn call(&mut self) -> ParseResult {
-        let node = self.grouping()?;
+        let node = self.listing()?;
 
         if self.current_token() == TokenType::LeftParen {
             self.next();
@@ -218,6 +218,31 @@ impl Parser {
         }
 
         Ok(node)
+    }
+
+    fn listing(&mut self) -> ParseResult {
+        if self.current_token() == TokenType::LeftSquare {
+            let mut list_nodes = vec![];
+            self.next();
+
+            while self.current_token() != TokenType::RightSquare {
+                list_nodes.push(Box::new(self.expression()?));
+
+                if self.current_token() != TokenType::Comma && self.current_token() != TokenType::RightSquare {
+                    return Err(ParseError::new(String::from("Expected ',' or ']'")));
+                }
+
+                if self.current_token() != TokenType::RightSquare {
+                    self.next();
+                }
+            }
+
+            self.next();
+
+            return Ok(Node::ListDef(list_nodes));
+        }
+
+        self.grouping()
     }
 
     fn grouping(&mut self) -> ParseResult {
@@ -251,7 +276,7 @@ impl Parser {
         result
     }
 
-    pub fn binary_operation<T: FnMut(&mut Self) -> ParseResult>(&mut self, func: &mut T, token_types: &[TokenType]) -> ParseResult {
+    pub fn binary_operation<T: FnMut(&mut Self) -> ParseResult>(&mut self, func: &mut T, token_types: &[TokenType], right_to_left: bool) -> ParseResult {
         let mut left = func(self)?;
 
         while token_types.contains(&self.current_token()) {
@@ -261,13 +286,10 @@ impl Parser {
 
             let right;
 
-            match op_token {
-                TokenType::Pow => {
-                    right = self.binary_operation(func, token_types)?;
-                },
-                _ => {
-                    right = func(self)?;
-                }
+            if right_to_left {
+                right = self.binary_operation(func, token_types, right_to_left)?;
+            } else {          
+                right = func(self)?;
             }
 
             left = Node::BinaryOp(Box::new(left), op_token, Box::new(right));
