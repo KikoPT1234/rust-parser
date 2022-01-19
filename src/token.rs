@@ -77,7 +77,7 @@ impl TokenType {
             TokenType::RightBracket => String::from("}"),
             TokenType::Keyword(string) => string.clone(),
             TokenType::Identifier(string) => string.clone(),
-            TokenType::Str(string) => string.clone(),
+            TokenType::Str(string) => String::from("\"") + string + "\"",
             _ => string
         };
 

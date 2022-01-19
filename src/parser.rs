@@ -31,8 +31,6 @@ impl Parser {
         let mut nodes = vec![];
 
         loop {
-            let mut should_return = true;
-
             while self.current_token() == TokenType::Semicolon {
                 self.next();
             }
@@ -44,12 +42,13 @@ impl Parser {
             nodes.push(Box::new(self.expression()?));
 
             if self.current_token() == TokenType::Semicolon {
-                should_return = false;
                 self.next();
-            }
 
-            if self.current_token() == TokenType::EOF || (self.current_token() == TokenType::RightBracket && is_function_body) {
-                return Ok(Node::Statements(nodes, should_return));
+                if self.current_token() == TokenType::EOF {
+                    return Ok(Node::Statements(nodes, false));
+                }
+            } else {
+                return Ok(Node::Statements(nodes, true));
             }
         }
     }
@@ -158,7 +157,10 @@ impl Parser {
 
             let node = self.not()?;
 
-            return Ok(Node::UnaryOp(Box::new(node), op_token))
+            return match node {
+                Node::Empty => Err(ParseError::new(String::from("Unexpected end of file."))),
+                _ => Ok(Node::UnaryOp(Box::new(node), op_token))
+            }
         }
 
         self.term()
@@ -181,7 +183,7 @@ impl Parser {
         if current_token == TokenType::Plus || current_token == TokenType::Minus {
             self.next();
 
-            let node = self.atom()?;
+            let node = self.call()?;
 
             return match node {
                 Node::Empty => Err(ParseError::new(String::from("Unexpected end of file."))),

@@ -36,6 +36,7 @@ impl Value {
             (Float(n1), Float(n2)) => Ok(Float(n1 + n2)),
             (Str(s1), Str(s2)) => Ok(Str(String::from(s1) + &s2)),
             (Str(s), other) => Ok(Str(String::from(s) + &other.to_string(manager))),
+            (_, Str(s)) => Ok(Str(self.to_string(manager) + &s)),
             (Pointer(_, _), other) => Value::deref(self, manager).unwrap().add(other, manager),
             (_, Pointer(id, name)) => self.add(Value::deref(&Value::Pointer(id, name), manager).unwrap().clone(), manager),
             (_, other) => Err(RuntimeError::new(String::from("Operator '+' cannot be applied to '") + &self.to_string(manager) + "', '" + &other.to_string(manager) + "'."))
