@@ -39,13 +39,13 @@ fn main() {
 
         stdin().read_line(&mut code).unwrap();
 
-        manager = run(code.as_str(), manager, id);
+        run(code.as_str(), &mut manager, id);
         print!("> ");
         io::stdout().flush().unwrap();
     }
 }
 
-fn run(code: &str, mut manager: ContextManager, context_id: i32) -> ContextManager {
+fn run(code: &str, manager: &mut ContextManager, context_id: i32) {
     
 
     let mut lexer = Lexer::new(&code);
@@ -62,7 +62,7 @@ fn run(code: &str, mut manager: ContextManager, context_id: i32) -> ContextManag
                 Err(error) => eprintln!("{}", error.to_string()),
                 Ok(node) => {
                     println!("{:?}", node);
-                    let mut interpreter = Interpreter::new(&mut manager);
+                    let mut interpreter = Interpreter::new(manager);
 
                     match interpreter.visit(&node, context_id) {
                         Err(error) => eprintln!("{}", error.to_string()),
@@ -72,6 +72,4 @@ fn run(code: &str, mut manager: ContextManager, context_id: i32) -> ContextManag
             }
         }
     }
-    
-    manager
 }

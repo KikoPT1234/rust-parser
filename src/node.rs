@@ -13,5 +13,9 @@ pub enum Node {
     FuncDef(String, Vec<String>, Box<Node>),
     FuncCall(Box<Node>, Vec<Box<Node>>),
     Statements(Vec<Box<Node>>, bool),
-    Empty
+
+    If(Box<Node>, Box<Node>, Option<Box<Node>>),
+
+    Empty,
+    EOF
 }

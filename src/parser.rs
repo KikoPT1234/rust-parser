@@ -27,7 +27,7 @@ impl Parser {
         }
     }
 
-    fn statements(&mut self, is_function_body: bool) -> ParseResult {
+    fn statements(&mut self, contained: bool) -> ParseResult {
         let mut nodes = vec![];
 
         loop {
@@ -35,7 +35,7 @@ impl Parser {
                 self.next();
             }
 
-            if self.current_token() == TokenType::RightBracket && is_function_body {
+            if self.current_token() == TokenType::RightBracket && contained {
                 return Ok(Node::Empty);
             }
 
@@ -57,78 +57,11 @@ impl Parser {
         match self.current_token() {
             TokenType::Keyword(string) => {
                 if string == "let" {
-                    self.next();
-                    
-                    match self.current_token() {
-                        TokenType::Identifier(name) => {
-                            self.next();
-
-                            if self.current_token() != TokenType::Eq {
-                                return Err(ParseError::new(String::from("Expected '='")))
-                            }
-
-                            self.next();
-
-                            let value_node = self.expression()?;
-
-                            Ok(Node::VarDef(name, Box::new(value_node)))
-                        },
-                        _ => Err(ParseError::new(String::from("Expected identifier")))
-                    }
+                    self.var_def()
                 } else if string == "function" {
-                    self.next();
-
-                    match self.current_token() {
-                        TokenType::Identifier(function_name) => {
-                            self.next();
-
-                            if self.current_token() != TokenType::LeftParen {
-                                return Err(ParseError::new(String::from("Expected '('")));
-                            }
-
-                            self.next();
-
-                            let mut args = vec![];
-
-                            while self.current_token() != TokenType::RightParen {
-                                match self.current_token() {
-                                    TokenType::Identifier(arg) => {
-                                        args.push(arg);
-
-                                        self.next();
-
-                                        if self.current_token() != TokenType::Comma && self.current_token() != TokenType::RightParen {
-                                            return Err(ParseError::new(String::from("Expected ',' or ')'")));
-                                        }
-
-                                        if self.current_token() != TokenType::RightParen {
-                                            self.next();
-                                        }
-                                    },
-                                    _ => return Err(ParseError::new(String::from("Identifier expected")))
-                                }
-                            }
-
-                            self.next();
-
-                            if self.current_token() != TokenType::LeftBracket {
-                                return Err(ParseError::new(String::from("Expected '{'")));
-                            }
-
-                            self.next();
-
-                            let statements = self.statements(true)?;
-
-                            if self.current_token() != TokenType::RightBracket {
-                                return Err(ParseError::new(String::from("Expected '}'")))
-                            }
-
-                            self.next();
-
-                            Ok(Node::FuncDef(function_name, args, Box::new(statements)))
-                        },
-                        _ => Err(ParseError::new(String::from("Expected identifier")))
-                    }
+                    self.function_def()
+                } else if string == "if" {
+                    self.if_expression()
                 } else {
                     self.logical_bitwise_comparison()
                 }
@@ -271,7 +204,7 @@ impl Parser {
             TokenType::Float(number) => Ok(Node::Float(number)),
             TokenType::Str(string) => Ok(Node::Str(string)),
             TokenType::Identifier(string) => Ok(Node::VarAcc(string)),
-            TokenType::EOF => Ok(Node::Empty),
+            TokenType::EOF => Ok(Node::EOF),
             _ => Err(ParseError::new(String::from("Unexpected token '") + &self.current_token().to_string() + "'"))
         };
         self.next();
@@ -298,6 +231,142 @@ impl Parser {
         }
 
         Ok(left)
+    }
+
+    fn var_def(&mut self) -> ParseResult {
+        self.next();
+                    
+        match self.current_token() {
+            TokenType::Identifier(name) => {
+                self.next();
+
+                if self.current_token() != TokenType::Eq {
+                    return Err(ParseError::new(String::from("Expected '='")))
+                }
+
+                self.next();
+
+                let value_node = self.expression()?;
+
+                Ok(Node::VarDef(name, Box::new(value_node)))
+            },
+            _ => Err(ParseError::new(String::from("Expected identifier")))
+        }
+    }
+
+    fn function_def(&mut self) -> ParseResult {
+        self.next();
+
+        match self.current_token() {
+            TokenType::Identifier(function_name) => {
+                self.next();
+
+                if self.current_token() != TokenType::LeftParen {
+                    return Err(ParseError::new(String::from("Expected '('")));
+                }
+
+                self.next();
+
+                let mut args = vec![];
+
+                while self.current_token() != TokenType::RightParen {
+                    match self.current_token() {
+                        TokenType::Identifier(arg) => {
+                            args.push(arg);
+
+                            self.next();
+
+                            if self.current_token() != TokenType::Comma && self.current_token() != TokenType::RightParen {
+                                return Err(ParseError::new(String::from("Expected ',' or ')'")));
+                            }
+
+                            if self.current_token() != TokenType::RightParen {
+                                self.next();
+                            }
+                        },
+                        _ => return Err(ParseError::new(String::from("Identifier expected")))
+                    }
+                }
+
+                self.next();
+
+                let statements = self.block()?;
+
+                Ok(Node::FuncDef(function_name, args, Box::new(statements)))
+            },
+            _ => Err(ParseError::new(String::from("Expected identifier")))
+        }
+    }
+
+    fn if_expression(&mut self) -> ParseResult {
+        self.next();
+
+        if self.current_token() != TokenType::LeftParen {
+            return Err(ParseError::new(String::from("Expected '('")))
+        }
+
+        let condition = self.grouping()?;
+
+        let body;
+
+        if self.current_token() == TokenType::LeftBracket {
+            body = self.block()?;
+        } else {
+            body = self.expression()?;
+
+            match body {
+                Node::EOF => {
+                    return Err(ParseError::new(String::from("Unexpected end of file")))
+                },
+                _ => {}
+            }
+        }
+
+        match self.current_token() {
+            TokenType::Keyword(string) => {
+                if string == "else" {
+                    self.next();
+
+                    let else_body;
+
+                    if self.current_token() == TokenType::LeftBracket {
+                        else_body = self.block()?;
+                    } else {
+                        else_body = self.expression()?;
+            
+                        match else_body {
+                            Node::EOF => {
+                                return Err(ParseError::new(String::from("Unexpected end of file")))
+                            },
+                            _ => {}
+                        }
+                    }
+
+                    Ok(Node::If(Box::new(condition), Box::new(body), Some(Box::new(else_body))))
+                } else {
+                    Ok(Node::If(Box::new(condition), Box::new(body), None))
+                }
+            },
+            _ => Ok(Node::If(Box::new(condition), Box::new(body), None))
+        }
+    }
+
+    fn block(&mut self) -> ParseResult {
+        if self.current_token() != TokenType::LeftBracket {
+            return Err(ParseError::new(String::from("Expected '{'")));
+        }
+
+        self.next();
+
+        let statements = self.statements(true)?;
+
+        if self.current_token() != TokenType::RightBracket {
+            return Err(ParseError::new(String::from("Expected '}'")))
+        }
+
+        self.next();
+
+        Ok(statements)
     }
 
     fn next(&mut self) -> TokenType {

@@ -30,7 +30,9 @@ impl<'a> Interpreter<'a> {
             Node::ListDef(..) => self.visit_list_def_node(node, context_id),
             Node::FuncDef(..) => self.visit_func_def_node(node, context_id),
             Node::FuncCall(..) => self.visit_func_call_node(node, context_id),
-            Node::Empty => Ok(Value::Null)
+            Node::If(..) => self.visit_if_node(node, context_id),
+            Node::Empty => Ok(Value::Null),
+            Node::EOF => Ok(Value::Null)
         }
     }
 
@@ -247,6 +249,30 @@ impl<'a> Interpreter<'a> {
                 }
             }
             _ => Err(RuntimeError::new(String::from("Func call expected")))
+        }
+    }
+
+    fn visit_if_node(&mut self, node: &Node, context_id: i32) -> RuntimeResult {
+        match node {
+            Node::If(condition, body, else_body) => {
+                let condition_value = self.visit(condition, context_id)?;
+
+                if condition_value.is_true(self.manager) {
+                    let if_context = self.manager.create_context(Some(context_id));
+
+                    self.visit(body, if_context)
+                } else {
+                    match else_body {
+                        Some(else_node) => {
+                            let else_context = self.manager.create_context(Some(context_id));
+
+                            self.visit(else_node, else_context)
+                        }
+                        None => Ok(Value::Null)
+                    }
+                }
+            },
+            _ => Err(RuntimeError::new(String::from("If expected")))
         }
     }
 }
