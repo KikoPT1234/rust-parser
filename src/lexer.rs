@@ -47,6 +47,10 @@ impl Lexer {
                                 self.next();
                                 TokenType::Mul
                             },
+                            '/' => {
+                                self.next();
+                                TokenType::Div
+                            },
                             ';' => {
                                 self.next();
                                 TokenType::Semicolon
@@ -93,6 +97,22 @@ impl Lexer {
                             '^' => self.make_pow()?,
                             ' ' => {
                                 self.next();
+                                continue;
+                            },
+                            '#' => {
+                                loop {
+                                    match self.current_char {
+                                        Some(current_char) => {
+                                            if ['\n', '\r'].contains(&current_char) {
+                                                break;
+                                            } else {
+                                                self.next();
+                                            }
+                                        },
+                                        None => break
+                                    }
+                                };
+
                                 continue;
                             },
                             '\t' => {

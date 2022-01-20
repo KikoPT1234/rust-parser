@@ -31,8 +31,8 @@ impl<'a> Interpreter<'a> {
             Node::FuncDef(..) => self.visit_func_def_node(node, context_id),
             Node::FuncCall(..) => self.visit_func_call_node(node, context_id),
             Node::If(..) => self.visit_if_node(node, context_id),
-            Node::Empty => Ok(Value::Null),
-            Node::EOF => Ok(Value::Null)
+            Node::WhileLoop(..) => self.visit_while_loop_node(node, context_id),
+            _ => Ok(Value::Null)
         }
     }
 
@@ -273,6 +273,29 @@ impl<'a> Interpreter<'a> {
                 }
             },
             _ => Err(RuntimeError::new(String::from("If expected")))
+        }
+    }
+
+    fn visit_while_loop_node(&mut self, node: &Node, context_id: i32) -> RuntimeResult {
+        match node {
+            Node::WhileLoop(condition, body) => {
+                let while_context = self.manager.create_context(Some(context_id));
+
+                let mut result_value = Value::Null;
+
+                loop {
+                    let condition_value = self.visit(condition, context_id)?;
+
+                    if !condition_value.is_true(self.manager) {
+                        break;
+                    }
+
+                    result_value = self.visit(body, while_context)?;
+                }
+
+                Ok(result_value)
+            },
+            _ => Err(RuntimeError::new(String::from("While loop expected")))
         }
     }
 }

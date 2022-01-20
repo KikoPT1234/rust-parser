@@ -31,9 +31,6 @@ impl Parser {
         let mut nodes = vec![];
 
         loop {
-            while self.current_token() == TokenType::Semicolon {
-                self.next();
-            }
 
             if self.current_token() == TokenType::RightBracket && contained {
                 return Ok(Node::Empty);
@@ -42,9 +39,12 @@ impl Parser {
             nodes.push(Box::new(self.expression()?));
 
             if self.current_token() == TokenType::Semicolon {
-                self.next();
+                
+                while self.current_token() == TokenType::Semicolon {
+                    self.next();
+                }
 
-                if self.current_token() == TokenType::EOF {
+                if self.current_token() == TokenType::EOF/* || (self.current_token() == TokenType::RightBracket && contained)*/ {
                     return Ok(Node::Statements(nodes, false));
                 }
             } else {
@@ -62,6 +62,8 @@ impl Parser {
                     self.function_def()
                 } else if string == "if" {
                     self.if_expression()
+                } else if string == "while" {
+                    self.while_expression()
                 } else {
                     self.logical_bitwise_comparison()
                 }
@@ -349,6 +351,33 @@ impl Parser {
             },
             _ => Ok(Node::If(Box::new(condition), Box::new(body), None))
         }
+    }
+
+    fn while_expression(&mut self) -> ParseResult {
+        self.next();
+
+        if self.current_token() != TokenType::LeftParen {
+            return Err(ParseError::new(String::from("Expected '('")));
+        }
+
+        let condition = self.grouping()?;
+
+        let body;
+
+        if self.current_token() == TokenType::LeftBracket {
+            body = self.block()?;
+        } else {
+            body = self.expression()?;
+
+            match body {
+                Node::EOF => {
+                    return Err(ParseError::new(String::from("Unexpected end of file")))
+                },
+                _ => {}
+            }
+        }
+
+        Ok(Node::WhileLoop(Box::new(condition), Box::new(body)))
     }
 
     fn block(&mut self) -> ParseResult {

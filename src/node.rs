@@ -16,6 +16,8 @@ pub enum Node {
 
     If(Box<Node>, Box<Node>, Option<Box<Node>>),
 
+    WhileLoop(Box<Node>, Box<Node>),
+
     Empty,
     EOF
 }

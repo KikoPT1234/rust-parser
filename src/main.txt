@@ -1,0 +1,26 @@
+#let n = 10;
+
+#function hello(x, n) {
+#    if (x < n) {
+#        x + " is less than " + n
+#    } else if (x > n) {
+#        x + " is greater than " + n
+#    } else {
+#        x + " is equal to " + n
+#    }
+#};
+
+#[hello(1, n), hello(10, n), hello(11, n)];
+
+#while (true) {
+    
+#}
+
+function f() {
+    let i = 1;
+    i
+};
+
+let e = f();
+
+e

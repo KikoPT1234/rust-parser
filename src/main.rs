@@ -15,11 +15,14 @@ use crate::error::*;
 use crate::value::Value;
 use crate::context::*;
 
-use std::io::{self, stdin, Write};
+// use std::io::{self, stdin, Write};
+use std::fs;
+
+const NAME: &str = "C:\\Users\\carri\\Desktop\\Projects\\rust-parser\\src\\main.txt";
 
 fn main() {
-    print!("> ");
-    io::stdout().flush().unwrap();
+    // print!("> ");
+    // io::stdout().flush().unwrap();
 
     // let mut context = Context::new(None);
     // context.symbol_table.set("true", Value::Boolean(true));
@@ -34,20 +37,17 @@ fn main() {
     manager.set(id, "false", Value::Boolean(false));
     manager.set(id, "null", Value::Null);
 
-    loop {
-        let mut code = String::new();
+    // let mut name = String::new();
 
-        stdin().read_line(&mut code).unwrap();
+    // stdin().read_line(&mut name).unwrap();
 
-        run(code.as_str(), &mut manager, id);
-        print!("> ");
-        io::stdout().flush().unwrap();
-    }
+    let code = fs::read_to_string(NAME).expect("Something went wrong reading the file");
+
+    run(&code, &mut manager, id);
 }
 
 fn run(code: &str, manager: &mut ContextManager, context_id: i32) {
     
-
     let mut lexer = Lexer::new(&code);
     let result = lexer.tokenize();
 
